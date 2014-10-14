@@ -1,0 +1,34 @@
+{
+  "name": "dist-lock",
+  "version": "0.1.0",
+  "description": "A distributed lock that uses Redis v2.6.12 or above",
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.6"
+  },
+  "scripts": {
+    "test": "./node_modules/mocha/bin/mocha"
+  },
+  "author": "Dave McClure <dave@yougot.me>",
+  "license": "MIT",
+  "dependencies": {
+    "cuid": "^1.2.4"
+  },
+  "devDependencies": {
+    "async": "^0.9.0",
+    "mocha": "^1.21.4",
+    "redis": "^0.12.1",
+    "should": "^4.0.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dmcclure/dist-lock.git"
+  },
+  "homepage": "https://github.com/dmcclure/dist-lock",
+  "keywords": [
+    "lock",
+    "redis",
+    "distributed",
+    "mutex"
+  ]
+}
