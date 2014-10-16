@@ -3,11 +3,7 @@
  */
 
 var cuid = require('cuid');
-var fs = require('fs');
-
-// Load the Lua scripts we need
-var delKeyValuePairScript = fs.readFileSync(__dirname + '/delKeyValuePair.lua').toString();
-var extendKeyValuePairScript = fs.readFileSync(__dirname + '/extendKeyValuePair.lua').toString();
+var Scripto = require('redis-scripto');
 
 /**
  * Return a distLock instance that can be used to acquire distributed locks.
@@ -27,6 +23,10 @@ module.exports = function(redis, options) {
   options.retryDelay = typeof options.retryDelay !== 'undefined' ? options.retryDelay : 50;
   options.maxRetries = typeof options.maxRetries !== 'undefined' ? options.maxRetries : -1;
   options.keyPrefix = typeof options.keyPrefix !== 'undefined' ? options.keyPrefix : 'lock:';
+
+  // Initialize Scripto and load our Lua scripts
+  var scriptManager = new Scripto(redis);
+  scriptManager.loadFromDir(__dirname + '/lua');
 
   var distLock = {};
 
@@ -48,10 +48,10 @@ module.exports = function(redis, options) {
           key: key,
           id: lockId,
           release: function(callback) {
-            redis.eval(delKeyValuePairScript, 1, key, lockId, callback);
+            scriptManager.eval('delKeyValuePair', [ key ], [ lockId ], callback);
           },
           extend: function(seconds, callback) {
-            redis.eval(extendKeyValuePairScript, 1, key, lockId, seconds, callback);
+            scriptManager.eval('extendKeyValuePair', [ key ], [ lockId, seconds ], callback);
           }
         };
 
