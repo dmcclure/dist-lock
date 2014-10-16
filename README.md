@@ -63,7 +63,7 @@ Create a distributed lock manager by passing in a Redis client instance:
 var distLock = require('dist-lock')(redis);
 ```
 
-You may override the default configuration by passing in options:
+You can override the default configuration by passing in options:
 ```javascript
 var options = {
   ttl: 30000,        // Time in milliseconds after which the lock will automatically release
@@ -94,7 +94,7 @@ callback | Function | Function called when the lock is acquired, an error occurs
 
 On success, the callback function will be called with a new lock instance.
 
-If you configure the lock manager to try a limited number of times to acquire the lock and that number is reached then `lock` will be false.
+If you configure the lock manager to try a limited number of times to acquire the lock and the lock could not be acquired then `lock` will be false.
 
 ###Lock instance
 
