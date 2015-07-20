@@ -57,7 +57,7 @@ distLock.acquire('shared-resource-name', function(err, lock) {
 ```
 Usage
 -----
-###Initialization
+### Initialization
 Create a distributed lock manager by passing in a Redis client instance:
 ```javascript
 var distLock = require('dist-lock')(redis);
@@ -81,10 +81,10 @@ Default configuration is:
 - maxRetries: -1 (unlimited)
 - keyPrefix: "lock:"
 
-###Acquiring a lock
+### Acquiring a lock
 Call the `acquire()` function to acquire a lock:
 
-####.acquire(resourceName, callback)
+#### .acquire(resourceName, callback)
 Parameters:
 
 Name  | Type | Description
@@ -96,7 +96,7 @@ On success, the callback function will be called with a new lock instance.
 
 If you configure the lock manager to try a limited number of times to acquire the lock and the lock could not be acquired then `lock` will be false.
 
-###Lock instance
+### Lock instance
 
 The lock instance will have the following properties and methods:
 
