@@ -4,7 +4,7 @@
   "description": "A distributed lock that uses Redis v2.6.12 or above",
   "main": "index.js",
   "engines": {
-    "node": ">=0.6"
+    "node": ">=0.8"
   },
   "scripts": {
     "test": "./node_modules/mocha/bin/mocha"
