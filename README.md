@@ -15,11 +15,6 @@ Features
 - Option to wait indefinitely for a lock, or timeout after a configurable duration.
 - To avoid potential deadlocks, locks will automatically release after a configurable duration.
 
-Version
-----
-
-1.0.0
-
 Requirements
 ----
 
