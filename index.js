@@ -50,12 +50,10 @@ module.exports = function(redis, options) {
           id: lockId,
           owner: owner,
           release: function(callback) {
-            //scriptManager.eval('deleteLock', [ key ], [ lockId ], callback);
             distLock.releaseLock(resourceName, lockId, callback);
           },
-          extend: function(seconds, callback) {
-            //scriptManager.eval('extendLock', [ key ], [ lockId, seconds ], callback);
-            distLock.extendLock(resourceName, lockId, seconds, callback);
+          extend: function(milliseconds, callback) {
+            distLock.extendLock(resourceName, lockId, milliseconds, callback);
           }
         };
 
@@ -143,8 +141,8 @@ module.exports = function(redis, options) {
         release: function(callback) {
           distLock.releaseLock(resourceName, result[0], callback);
         },
-        extend: function(seconds, callback) {
-          distLock.extendLock(resourceName, result[0], seconds, callback);
+        extend: function(milliseconds, callback) {
+          distLock.extendLock(resourceName, result[0], milliseconds, callback);
         }
       };
 
@@ -181,11 +179,11 @@ module.exports = function(redis, options) {
    *
    * @param resourceName {string} Name of the resource locked
    * @param id {string} ID of a lock
-   * @param seconds {int} The lock's TTL will be reset to this many seconds
+   * @param milliseconds {int} The lock's TTL will be reset to this many milliseconds
    * @param callback {Function} Called as callback(err, extended). extended will be true if the lock was found and its TTL reset
    * @returns {*}
    */
-  distLock.extendLock = function(resourceName, id, seconds, callback) {
+  distLock.extendLock = function(resourceName, id, milliseconds, callback) {
     if (!resourceName || typeof resourceName !== 'string') {
       return callback(new Error('resourceName is required and must be a string'));
     }
@@ -194,12 +192,12 @@ module.exports = function(redis, options) {
       return callback(new Error('id is required and must be a string'));
     }
 
-    if (!seconds || typeof seconds !== 'number') {
-      return callback(new Error('seconds is required and must be a number'));
+    if (!milliseconds || typeof milliseconds !== 'number') {
+      return callback(new Error('milliseconds is required and must be a number'));
     }
 
     var key = options.keyPrefix + resourceName;
-    scriptManager.eval('extendLock', [ key ], [ id, seconds ], function(err, result) {
+    scriptManager.eval('extendLock', [ key ], [ id, milliseconds ], function(err, result) {
       if (err) return callback(err);
       callback(null, result === 1);
     });

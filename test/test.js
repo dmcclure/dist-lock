@@ -166,7 +166,7 @@ it('extends a lock ttl with lock.extend()', function(done) {
     should.not.exist(err);
     lock.should.not.be.false;
 
-    lock.extend(1, function(err, result) {
+    lock.extend(1000, function(err, result) {
       should.not.exist(err);
       result.should.be.true;
 
@@ -188,7 +188,7 @@ it('extends a lock ttl with extendLock()', function(done) {
     should.not.exist(err);
     lock.should.not.be.false;
 
-    distLock.extendLock('test-resource', lock.id, 1, function(err, result) {
+    distLock.extendLock('test-resource', lock.id, 1000, function(err, result) {
       should.not.exist(err);
       result.should.be.true;
 
@@ -211,7 +211,7 @@ it('fail to extend an expired lock', function(done) {
     lock.should.not.be.false;
 
     setTimeout(function() {
-      lock.extend(1, function(err, result) {
+      lock.extend(1000, function(err, result) {
         should.not.exist(err);
         result.should.be.false;
         done();
