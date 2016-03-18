@@ -34,24 +34,26 @@ module.exports = function(redis, options) {
    * Attempt to acquire a lock, returning false straight away if the lock is unavailable.
    *
    * @param resourceName {string} Name of the resource to lock
+   * @param owner {string} Name of who or what will own the lock
    * @param callback {Function}
    */
-  var tryToAcquireLock = function(resourceName, callback) {
+  var tryToAcquireLock = function(resourceName, owner, callback) {
     var lockId = cuid();
     var key = options.keyPrefix + resourceName;
 
-    redis.set(key, lockId, 'PX', options.ttl, 'NX', function(err, acquired) {
+    scriptManager.eval('createLock', [ key ], [ lockId, owner, options.ttl ], function(err, result) {
       if (err) return callback(err);
 
-      if (acquired) {
+      if (result === 1) {
         var lock = {
           key: key,
           id: lockId,
+          owner: owner,
           release: function(callback) {
-            scriptManager.eval('delKeyValuePair', [ key ], [ lockId ], callback);
+            distLock.releaseLock(resourceName, lockId, callback);
           },
-          extend: function(seconds, callback) {
-            scriptManager.eval('extendKeyValuePair', [ key ], [ lockId, seconds ], callback);
+          extend: function(milliseconds, callback) {
+            distLock.extendLock(resourceName, lockId, milliseconds, callback);
           }
         };
 
@@ -66,15 +68,25 @@ module.exports = function(redis, options) {
    * Acquire a lock, retrying if the lock cannot be immediately acquired.
    *
    * @param resourceName {string} Name of the resource to lock
+   * @param owner {string} Name of who or what will own the lock
    * @param callback {Function} Called as callback(err, lock). Lock will be false if the lock could not be acquired
    */
-  distLock.acquire = function(resourceName, callback) {
-    if (!resourceName || typeof resourceName != 'string') {
-      throw new Error('resourceName is required and must be a string');
+  distLock.acquire = function(resourceName, owner, callback) {
+    if (!resourceName || typeof resourceName !== 'string') {
+      return callback(new Error('resourceName is required and must be a string'));
+    }
+
+    if (typeof owner === 'function') {
+      callback = owner;
+      owner = '';
     }
 
     if (typeof callback !== 'function') {
-      throw new Error('callback function is required');
+      return callback(new Error('callback function is required'));
+    }
+
+    if (typeof owner !== 'string') {
+      return callback(new Error('owner must be a string'));
     }
 
     var attempt = 0;
@@ -82,7 +94,7 @@ module.exports = function(redis, options) {
     var attemptAcquire = function() {
       attempt += 1;
 
-      tryToAcquireLock(resourceName, function(err, lock) {
+      tryToAcquireLock(resourceName, owner, function(err, lock) {
         if (err) return callback(err);
 
         if (lock) {
@@ -101,6 +113,95 @@ module.exports = function(redis, options) {
 
     return attemptAcquire();
   };
+
+  /**
+   * Return the acquired lock for a resource, or null if a lock does not exist.
+   *
+   * @param resourceName {string} Name of the resource locked
+   * @param callback {Function} Called as callback(err, lock). Lock will be null if no lock exists
+   */
+  distLock.getAcquiredLock = function(resourceName, callback) {
+    if (!resourceName || typeof resourceName !== 'string') {
+      return callback(new Error('resourceName is required and must be a string'));
+    }
+
+    var key = options.keyPrefix + resourceName;
+
+    redis.hmget(key, 'id', 'owner', function(err, result) {
+      if (err) return callback(err);
+
+      if (result[0] === null) {  // If there is no lock on the resource
+        return callback(null, null);
+      }
+
+      var lock = {
+        key: key,
+        id: result[0],
+        owner: result[1],
+        release: function(callback) {
+          distLock.releaseLock(resourceName, result[0], callback);
+        },
+        extend: function(milliseconds, callback) {
+          distLock.extendLock(resourceName, result[0], milliseconds, callback);
+        }
+      };
+
+      return callback(null, lock);
+    });
+  };
+
+  /**
+   * Release a lock for a resource given its unique ID.
+   *
+   * @param resourceName {string} Name of the resource locked
+   * @param id {string} ID of a lock
+   * @param callback {Function} Called as callback(err, released). released will be true if the lock was found and released
+   * @returns {*}
+   */
+  distLock.releaseLock = function(resourceName, id, callback) {
+    if (!resourceName || typeof resourceName !== 'string') {
+      return callback(new Error('resourceName is required and must be a string'));
+    }
+
+    if (!id || typeof id !== 'string') {
+      return callback(new Error('id is required and must be a string'));
+    }
+
+    var key = options.keyPrefix + resourceName;
+    scriptManager.eval('deleteLock', [ key ], [ id ], function(err, result) {
+      if (err) return callback(err);
+      callback(null, result === 1);
+    });
+  }
+
+  /**
+   * Extend a lock for a resource given its unique ID.
+   *
+   * @param resourceName {string} Name of the resource locked
+   * @param id {string} ID of a lock
+   * @param milliseconds {int} The lock's TTL will be reset to this many milliseconds
+   * @param callback {Function} Called as callback(err, extended). extended will be true if the lock was found and its TTL reset
+   * @returns {*}
+   */
+  distLock.extendLock = function(resourceName, id, milliseconds, callback) {
+    if (!resourceName || typeof resourceName !== 'string') {
+      return callback(new Error('resourceName is required and must be a string'));
+    }
+
+    if (!id || typeof id !== 'string') {
+      return callback(new Error('id is required and must be a string'));
+    }
+
+    if (!milliseconds || typeof milliseconds !== 'number') {
+      return callback(new Error('milliseconds is required and must be a number'));
+    }
+
+    var key = options.keyPrefix + resourceName;
+    scriptManager.eval('extendLock', [ key ], [ id, milliseconds ], function(err, result) {
+      if (err) return callback(err);
+      callback(null, result === 1);
+    });
+  }
 
   return distLock;
 };

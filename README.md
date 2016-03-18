@@ -35,14 +35,14 @@ var redis = require('redis').createClient();
 var distLock = require('dist-lock')(redis);
 
 // Acquire a lock
-distLock.acquire('shared-resource-name', function(err, lock) {
+distLock.acquire('shared-resource-name', 'owner-name', function(err, lock) {
   if (err) {
     // Something went wrong. Is Redis down?
     throw err;
   }
   
-  // We have acquired a lock for "shared-resource-name". No other process
-  // will be able to acquire the lock while we hold it
+  // We have acquired a lock for "shared-resource-name" and identified ourselves (the lock acquirer) as
+  // "owner-name". No other process will be able to acquire the lock while we hold it.
   
   // Do some work...
   
@@ -50,6 +50,7 @@ distLock.acquire('shared-resource-name', function(err, lock) {
   lock.release();
 });
 ```
+
 Usage
 -----
 ### Initialization
@@ -84,7 +85,8 @@ Parameters:
 
 Name  | Type | Description
 ----- | ---- | -----------
-resourceName | string | Your name of the shared resource being locked
+resourceName | string | Unique name of the shared resource being locked
+owner | string | A string to identify who or which process acquired the lock (optional)
 callback | Function | Function called when the lock is acquired, an error occurs, or the maximum number of lock acquisition attempts has been reached
 
 On success, the callback function will be called with a new lock instance.
@@ -99,10 +101,65 @@ Name  | Type | Description
 ----- | ---- | -----------
 id | string | The unique ID of the lock
 key | string | The key of the lock in Redis
+owner | string | The name of the lock acquirer passed to the `acquire()` function, or an empty string
 acquiredOnAttempt | int | The number of attempts made to acquire the lock
 acquireDelay | int | The duration in milliseconds it took to acquire the lock
 release(callback) | Function | Call this function to release the lock
-extend(seconds, callback) | Function | Call this function to extend the ttl of the lock. The lock's TTL will be reset to `seconds` seconds.
+extend(milliseconds, callback) | Function | Call this function to extend the ttl of the lock. The lock's TTL will be reset to `milliseconds` milliseconds.
+
+### Releasing a lock
+Call an acquired lock's `release()` function to release the lock:
+
+#### lock.release()
+
+Alternatively, call `distLock.releaseLock(resourceName, id, callback)` to release a lock:
+
+#### distLock.releaseLock(resourceName, id, callback)
+
+Parameters:
+
+Name  | Type | Description
+----- | ---- | -----------
+resourceName | string | Unique name of the shared resource that is locked
+id | string | Unique ID of the lock to be released
+callback | Function | Function called when the lock is released or an error occurs
+
+On success, the callback function will be called with true (the lock was released) or false (the lock does not exist).
+
+
+### Extending a lock
+Call an acquired lock's `extend()` function to extend the TTL of the lock:
+
+#### lock.extend(milliseconds)
+
+Alternatively, call `distLock.extendLock(resourceName, id, milliseconds, callback)` to extend a lock:
+
+#### distLock.extendLock(resourceName, id, milliseconds, callback)
+
+Parameters:
+
+Name  | Type | Description
+----- | ---- | -----------
+resourceName | string | Unique name of the shared resource that is locked
+id | string | Unique ID of the lock to be extended
+milliseconds | int | The lock's TTL will be reset to this many milliseconds
+callback | Function | Function called when the lock is extended or an error occurs
+
+On success, the callback function will be called with true (the lock was extended) or false (the lock does not exist).
+
+### Getting the details of an acquired lock
+
+#### distLock.getAcquiredLock(resourceName, id, callback)
+
+Parameters:
+
+Name  | Type | Description
+----- | ---- | -----------
+resourceName | string | Unique name of the shared resource that is locked
+id | string | Unique ID of the lock
+callback | Function | Function called with the lock's details an error occurs
+
+On success, the callback function will be called with lock or null if the lock does not exist.
 
 License
 ----
