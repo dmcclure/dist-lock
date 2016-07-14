@@ -1,6 +1,6 @@
 {
   "name": "dist-lock",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A distributed lock that uses Redis v2.6.12 or above",
   "main": "index.js",
   "engines": {
