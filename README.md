@@ -149,17 +149,16 @@ On success, the callback function will be called with true (the lock was extende
 
 ### Getting the details of an acquired lock
 
-#### distLock.getAcquiredLock(resourceName, id, callback)
+#### distLock.getAcquiredLock(resourceName, callback)
 
 Parameters:
 
 Name  | Type | Description
 ----- | ---- | -----------
 resourceName | string | Unique name of the shared resource that is locked
-id | string | Unique ID of the lock
-callback | Function | Function called with the lock's details an error occurs
+callback | Function | Function called with the lock's details or an error
 
-On success, the callback function will be called with lock or null if the lock does not exist.
+On success, the callback function will be called with a lock or with null if the lock does not exist.
 
 License
 ----
